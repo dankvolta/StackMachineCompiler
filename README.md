@@ -20,23 +20,35 @@ Sprint 3 --> implements the grammar rules for logic expressions, conditionals, a
 // sprint 1 grammar:
 
 program                ->  void main { declarations instructions }
+
 declarations           ->  declaration declarations | ε
+
 declaration            ->  type identifiers ;
+
 type                   ->  int | float | boolean
+
 identifiers            ->  id optional-declaration more-identifiers
+
 more-identifiers       ->  , id optional-declaration more-identifiers | ε
+
 optional-declaration   ->  = expression | ε
+
 instructions           ->  instruction instructions | ε
+
 instruction            ->  declaration       |
                            id assignment ; 
+
 assignment             ->  = expression                           
+
 expression             ->  expression + term |
                            expression - term |
                            term
+
 term                   ->  term * factor |
                            term / factor |
                            term % factor |
                            factor
+
 factor                 ->  (expression)  |
                            id            |
                            num
@@ -47,27 +59,42 @@ factor                 ->  (expression)  |
                            
                            
 // sprint 2 grammar: 
+
 program                ->  void main { declarations instructions }
+
 declarations           ->  declaration declarations | ε
+
 declaration            ->  type identifiers ;
+
 type                   ->  int | float | boolean
+
 identifiers            ->  id optional-declaration more-identifiers
+
 more-identifiers       ->  , id optional-declaration more-identifiers | ε
+
 optional-declaration   ->  = expression | [num] | ε
+
 instructions           ->  instruction instructions | ε
+
+
 instruction            ->  declaration          |
                            id assignment ;      |
                            print (expression) ; |
                            { instructions }
+
 assignment             ->  optional-array = expression                   
+
 optional-array         ->  [expression] | ε                   
+
 expression             ->  expression + term |
                            expression - term |
                            term
+
 term                   ->  term * factor |
                            term / factor |
                            term % factor |
                            factor
+
 factor                 ->  (expression)      |
                            id optional-array |
                            num
@@ -76,41 +103,67 @@ factor                 ->  (expression)      |
                            
                            
 // sprint 3 grammar: 
+
 program                ->  void main { declarations instructions }
+
 declarations           ->  declaration declarations | ε
+
 declaration            ->  type identifiers ;
+
 type                   ->  int | float | boolean
+
 identifiers            ->  id optional-declaration more-identifiers
+
 more-identifiers       ->  , id optional-declaration more-identifiers | ε
+
 optional-declaration   ->  = logic-expression | [num] | ε
+
 instructions           ->  instruction instructions | ε
+
 instruction            ->  declaration                                        |
-                           id assignment ;                                    |
+
+
+id assignment ;                                    |
                            if (logic-expression) instruction                  |
                            if (logic-expression) instruction else instruction |
                            while (logic-expression) instruction               |
                            do instruction while (logic-expression) ;          |
                            print (expression) ;                               |
                            { instructions }
+
 assignment             ->  optional-array = logic-expression |                   
+
 optional-array         ->  [expression]    | ε                       
+
 logic-expression       ->  logic-expression || logic-term |
-                           logic-term
+
+
+logic-term
+
 logic-term             ->  logic-term && logic-factor |
-                           logic-factor
+
+logic-factor
+
 logic-factor           ->  ! logic-factor | true | false |
                            relational-expression
+
+
 relational-expression  ->  expression relational-operator expression |
                            expression
+
 relational-operator    ->  < | <= | > | >= | == | !=
+
 optional-array         ->  [expression]
+
 expression             ->  expression + term |
                            expression - term |
                            term
+
 term                   ->  term * factor |
                            term / factor |
                            term % factor |
                            factor
+
 factor                 ->  (expression)      |
                            id optional-array |
                            num
