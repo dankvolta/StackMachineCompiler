@@ -1,0 +1,26 @@
+The first sprint implements declaration of data types, populates the symbol table, and generates code for simple assignments.
+
+# The grammar used: 
+
+program                ->  void main { declarations instructions }
+declarations           ->  declaration declarations | ε
+declaration            ->  type identifiers ;
+type                   ->  int | float | boolean
+identifiers            ->  id optional-declaration more-identifiers
+more-identifiers       ->  , id optional-declaration more-identifiers | ε
+optional-declaration   ->  = expression | ε
+instructions           ->  instruction instructions | ε
+instruction            ->  declaration       |
+                           id assignment ; 
+assignment             ->  = expression                           
+expression             ->  expression + term |
+                           expression - term |
+                           term
+term                   ->  term * factor |
+                           term / factor |
+                           term % factor |
+                           factor
+factor                 ->  (expression)  |
+                           id            |
+                           num
+
