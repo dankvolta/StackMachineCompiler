@@ -1,0 +1,27 @@
+The second sprint implements declaration of arrays of primitive data types and generates code for the instruction print.
+
+#GRAMMAR
+program                ->  void main { declarations instructions }
+declarations           ->  declaration declarations | ε
+declaration            ->  type identifiers ;
+type                   ->  int | float | boolean
+identifiers            ->  id optional-declaration more-identifiers
+more-identifiers       ->  , id optional-declaration more-identifiers | ε
+optional-declaration   ->  = expression | [num] | ε
+instructions           ->  instruction instructions | ε
+instruction            ->  declaration          |
+                           id assignment ;      |
+                           print (expression) ; |
+                           { instructions }
+assignment             ->  optional-array = expression                   
+optional-array         ->  [expression] | ε                   
+expression             ->  expression + term |
+                           expression - term |
+                           term
+term                   ->  term * factor |
+                           term / factor |
+                           term % factor |
+                           factor
+factor                 ->  (expression)      |
+                           id optional-array |
+                           num
