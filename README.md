@@ -17,7 +17,8 @@ Sprint 2 --> implements declaration of arrays of primitive data types.
 Sprint 3 --> implements the grammar rules for logic expressions, conditionals, and iterative instructions.
 
 # THE GRAMMAR: 
-// sprint 1 grammar:
+
+#sprint 1 grammar:
 
 program                ->  void main { declarations instructions }
 
@@ -58,7 +59,7 @@ factor                 ->  (expression)  |
                            
                            
                            
-// sprint 2 grammar: 
+# sprint 2 grammar: 
 
 program                ->  void main { declarations instructions }
 
@@ -102,7 +103,7 @@ factor                 ->  (expression)      |
                            
                            
                            
-// sprint 3 grammar: 
+# sprint 3 grammar: 
 
 program                ->  void main { declarations instructions }
 
