@@ -1,0 +1,29 @@
+pushy
+push 2
+store
+pushm
+push 1
+store
+pushd
+push 3
+store
+pushx
+push 14
+push y
+load
+*
+push 4
+/
+push 16
+push m
+load
+*
+push 4
++
+push 2
+/
++
+push d
+load
++
+store
