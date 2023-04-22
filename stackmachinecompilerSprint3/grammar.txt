@@ -1,0 +1,41 @@
+For sprint 3, here is the grammar to be implemented in SyntaxAnalyzer.java:
+
+program                ->  void main { declarations instructions }
+declarations           ->  declaration declarations | ε
+declaration            ->  type identifiers ;
+type                   ->  int | float | boolean
+identifiers            ->  id optional-declaration more-identifiers
+more-identifiers       ->  , id optional-declaration more-identifiers | ε
+optional-declaration   ->  = logic-expression | [int] | ε
+instructions           ->  instruction instructions | ε
+instruction            ->  declaration                                        |
+                           id assignment ;                                    |
+                           if (logic-expression) instruction optional-else    |
+                           while (logic-expression) instruction               |
+                           do instruction while (logic-expression) ;          |
+                           print (expression) ;                               |
+                           { instructions }
+assignment             ->  optional-array = logic-expression               
+optional-array         ->  [expression]     | ε                           
+optional-else          ->  else instruction | ε                            
+logic-expression       ->  logic-expression || logic-term |
+                           logic-term
+logic-term             ->  logic-term && logic-factor |
+                           logic-factor
+logic-factor           ->  ! logic-factor | true | false |
+                           relational-expression
+relational-expression  ->  expression relational-operator expression |
+                           expression
+relational-operator    ->  < | <= | > | >= | == | !=
+optional-array         ->  [expression]
+expression             ->  expression + term |
+                           expression - term |
+                           term
+term                   ->  term * factor |
+                           term / factor |
+                           term % factor |
+                           factor
+factor                 ->  (expression)      |
+                           id optional-array |
+                           int               |
+                           float
