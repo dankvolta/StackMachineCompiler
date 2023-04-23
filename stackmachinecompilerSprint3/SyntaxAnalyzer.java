@@ -39,7 +39,7 @@ import slu.compiler.*;
  *     instructions         ->  instruction instructions |
  *                              epsilon
  *                              
- *     instruction          ->  declaration |
+ *     instruction          ->  declaration |                   //IMPLEMENT
  *                              assignment ;
  *                              
  *     assignment           -> id { print("push " + id.lexeme) } expression { print("store") }
