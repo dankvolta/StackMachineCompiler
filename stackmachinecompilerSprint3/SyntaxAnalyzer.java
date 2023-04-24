@@ -6,79 +6,65 @@ import java.util.List;
 import java.util.Map;
 import slu.compiler.*;
 
-/* 
- *  Syntax-directed definition for data type declaration
- *  
- *     program              ->  void main { declarations  instructions}
- *
- *     declarations         ->  declaration declarations  |
- *                              epsilon
- *                                     
- *     declaration          ->  type { identifiers.type = type.value } identifiers ;
- *     
- *     type                 ->  int     { type.value = "int"     } |
- *                              float   { type.value = "float"   } |
- *                              boolean { type.value = "boolean" }                                   
- *                  
- *     identifiers          ->  id 
- *                              { addSymbol(id.lexeme, identifiers.type); optional-declaration.id = identifiers.id; more-identifiers.type = identifiers.type }
- *                              optional-declaration
- *                              more-identifiers
- *                                      
- *     more-identifiers     ->  , id 
- *                              { addSymbol(id.lexeme, identifiers.type); optional-declaration.id = identifiers.id; more-identifiers.type = identifiers.type }
- *                              optional-declaration
- *                              more-identifiers |
- *                              epsilon
- *                           
- *     optional-declaration ->  = { print("push " + id.lexeme) } expression { print("store") } |
- *                              epsilon                     
- *  
- *  Syntax-directed definition to translate infix arithmetic expressions into a stack machine code
- *
- *     instructions         ->  instruction instructions |
- *                              epsilon
- *                              
- *     instruction          ->  declaration |                   //IMPLEMENT
- *                              assignment ;
- *                              
- *     assignment           -> id { print("push " + id.lexeme) } expression { print("store") }
- *     
- *     expression           -> expression + term { print("+") } |
- *                             expression - term { print("-") }
- *                             term
- *                  
- *     term                 -> term * factor { print("*") } |
- *                             term / factor { print("/") } |
- *                             term % factor { print("%") } |
- *                             factor
- *                  
- *     factor               -> (expression) |
- *                              id  { print("push " + id.lexeme); } |
- *                              num { print("push " + num.value) }
- *                  
- *  Right-recursive SDD for a top-down recursive predictive parser
- *
- *     instruction          -> id { print("push " + id.lexeme) } expression { print("store") }
- *
- *     expression           -> term moreTerms
- *     
- *     moreTerms            -> + term { print("+") } moreTerms |
- *                             - term { print("-") } moreTerms |
- *                             epsilon
- *               
- *     term                 -> factor moreFactors
- *     
- *     moreFactors          -> * factor { print("*") } moreFactors |
- *                             / factor { print("/") } moreFactors |
- *                             % factor { print("%") } moreFactors |
- *                             epsilon
- *                    
- *     factor               -> (expression) |
- *                             id  { print("push " + id.lexeme); print("load") } |
- *                             num { print("push " + num.value) }
- *  
- */
+//program                ->  void main { declarations instructions }
+
+//declarations           ->  declaration declarations | ε
+
+//declaration            ->  type identifiers ;
+
+//type                   ->  int | float | boolean
+
+//identifiers            ->  id optional-declaration more-identifiers
+
+//more-identifiers       ->  , id optional-declaration more-identifiers | ε
+
+//optional-declaration   ->  = logic-expression | [int] | ε
+
+//instructions           ->  instruction instructions | ε
+
+//instruction            ->  declaration                                        |  DONE
+//                           id assignment ;                                    |
+//                           if (logic-expression) instruction optional-else    |
+//                           while (logic-expression) instruction               |
+//                           do instruction while (logic-expression) ;          |
+//                           print (expression) ;                               |
+//                           { instructions }
+
+//assignment             ->  optional-array = logic-expression             REIMPLEMENT  
+
+//optional-array         ->  [expression]     | ε                           
+
+//optional-else          ->  else instruction | ε               	           
+
+//logic-expression       ->  logic-expression || logic-term |		  		DONE
+//                           logic-term
+
+//logic-term             ->  logic-term && logic-factor |		 	DONE
+//                           logic-factor
+
+//logic-factor           ->  ! logic-factor | true | false |			DONE
+//                           relational-expression
+
+//relational-expression  ->  expression relational-operator expression |		DONE  
+//                           expression
+
+//relational-operator    ->  < | <= | > | >= | == | !=			DONE 
+
+//optional-array         ->  [expression]				
+
+//expression             ->  expression + term |
+//                           expression - term |
+//                           term
+
+//term                   ->  term * factor |
+//                           term / factor |
+//                           term % factor |
+//                           factor
+
+//factor                 ->  (expression)      |
+//                           id optional-array |
+//                           int               |
+//                           float
 
 public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     private IToken token;
@@ -214,6 +200,43 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     	}
 
     }
+	
+	 private void logicTerm() throws Exception {
+    	String token = this.token.getName();
+    	
+    	// parse the first logic factor
+    	logicFactor();
+    	
+    	// check for additional AND logic factors
+    	while(token.equals("and")) {
+    		match("and");
+    		logicFactor();
+    	}
+    	
+    }
+    
+    
+  //logic-factor           ->  ! logic-factor | true | false |			  
+				//  relational-expression
+    private void logicFactor() throws Exception {
+    	String token = this.token.getName();
+    	
+    	if(token.equals("not")) {
+    		// ! logicFactor
+    		match("not");
+    		logicFactor();
+    		
+    	}else if (token.equals("true")) {
+    		match("true");
+    	
+    	}else if (token.equals("false")) {
+    		match("false");
+    	
+    	}else {
+    		relationalExpression();
+    	}
+    	
+    }
     
    private void instruction() throws Exception{
     		
@@ -287,18 +310,51 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     	    }
     
     }
-
-    private void assignment() throws Exception {        
-        Identifier id = (Identifier) this.token;
-        
-        this.code.add("push " + id.getLexeme());
-        
-        match("assignment");
-        
-        expression();
-        
-        this.code.add("store");
+	
+	 //relational-expression  ->  expression relational-operator expression |		REIMPLEMENT  
+//  expression
+    
+    private void relationalExpression() throws Exception{
+    	 expression();
+    	    if (isRelationalOperator()) {
+    	        relationalOperator();
+    	        expression();
+    	    }
     }
+ 
+    // extra function to help with relationalExpression
+    private boolean isRelationalOperator() {
+        String token = this.token.getName();
+        return (token.equals("<") || token.equals("<=") ||
+                token.equals(">") || token.equals(">=") ||
+                token.equals("==") || token.equals("!="));
+    }
+    
+    
+//    relational-operator    ->  < | <= | > | >= | == | !=
+    private  void relationalOperator() throws Exception {
+        String token = this.token.getName();
+        if (token.equals("<") || token.equals("<=") ||
+            token.equals(">") || token.equals(">=") ||
+            token.equals("==") || token.equals("!=")) {
+            // match the relational operator token and move to the next token
+            match(token);
+        } else {
+            // throw an exception if the current token is not a relational operator
+            throw new Exception("Expected a relational operator! ");
+        }
+    }
+	
+	private void assignment() throws Exception {
+		    optionalArray();
+		    if (this.token.getName().equals("=")) {
+			match("=");
+			logicExpression();
+		    } else {
+			throw new Exception("Syntax error: expecting '=' after optional array");
+		    }
+    	}
+   
 
 
     private void expression() throws Exception {
