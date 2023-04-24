@@ -1,4 +1,4 @@
-package stackmachine.compiler.sprint2;
+package stackmachine.compiler.sprint3;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -200,45 +200,18 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     	}
 
     }
-	
-	 private void logicTerm() throws Exception {
-    	String token = this.token.getName();
-    	
-    	// parse the first logic factor
-    	logicFactor();
-    	
-    	// check for additional AND logic factors
-    	while(token.equals("and")) {
-    		match("and");
-    		logicFactor();
-    	}
-    	
-    }
     
+  //instruction            ->  declaration                                        |   
+//  id assignment ;                                    |
+//  if (logic-expression) instruction optional-else    |
+//  while (logic-expression) instruction               |
+//  do instruction while (logic-expression) ;          |
+//  print (expression) ;                               |
+//  { instructions }
     
-  //logic-factor           ->  ! logic-factor | true | false |			  
-				//  relational-expression
-    private void logicFactor() throws Exception {
-    	String token = this.token.getName();
+
     	
-    	if(token.equals("not")) {
-    		// ! logicFactor
-    		match("not");
-    		logicFactor();
-    		
-    	}else if (token.equals("true")) {
-    		match("true");
-    	
-    	}else if (token.equals("false")) {
-    		match("false");
-    	
-    	}else {
-    		relationalExpression();
-    	}
-    	
-    }
-    
-   private void instruction() throws Exception{
+    	private void instruction() throws Exception{
     		
     	String token = this.token.getName();
     	    if (token.equals("id") ) {
@@ -310,8 +283,80 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     	    }
     
     }
-	
-	 //relational-expression  ->  expression relational-operator expression |		REIMPLEMENT  
+    	
+    	
+    	private void assignment() throws Exception {
+    	    optionalArray();
+    	    if (this.token.getName().equals("=")) {
+    	        match("=");
+    	        logicExpression();
+    	    } else {
+    	        throw new Exception("Syntax error: expecting '=' after optional array");
+    	    }
+    	}
+    
+    private void optionalElse() throws Exception{
+    	String token = this.token.getName();
+    	
+    	if(token.equals("else")) {
+    		match("else");
+    		instruction();
+    	}
+    	
+    }
+    
+    private void logicExpression() throws Exception {
+    	String token = this.token.getName();
+    	// parse the first logic term 
+    	logicTerm();
+    	
+    	// check for additional || logic terms 
+    	while(token.equals("or")) {
+    		match("or");
+    		logicTerm();
+    	}
+    	
+    }
+    
+    private void logicTerm() throws Exception {
+    	String token = this.token.getName();
+    	
+    	// parse the first logic factor
+    	logicFactor();
+    	
+    	// check for additional AND logic factors
+    	while(token.equals("and")) {
+    		match("and");
+    		logicFactor();
+    	}
+    	
+    }
+    
+    
+  //logic-factor           ->  ! logic-factor | true | false |			REIMPLEMENT  
+//  relational-expression
+    private void logicFactor() throws Exception {
+    	String token = this.token.getName();
+    	
+    	if(token.equals("not")) {
+    		// ! logicFactor
+    		match("not");
+    		logicFactor();
+    		
+    	}else if (token.equals("true")) {
+    		match("true");
+    	
+    	}else if (token.equals("false")) {
+    		match("false");
+    	
+    	}else {
+    		relationalExpression();
+    	}
+    	
+    }
+    
+    
+  //relational-expression  ->  expression relational-operator expression |		REIMPLEMENT  
 //  expression
     
     private void relationalExpression() throws Exception{
@@ -344,16 +389,7 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
             throw new Exception("Expected a relational operator! ");
         }
     }
-	
-	private void assignment() throws Exception {
-		    optionalArray();
-		    if (this.token.getName().equals("=")) {
-			match("=");
-			logicExpression();
-		    } else {
-			throw new Exception("Syntax error: expecting '=' after optional array");
-		    }
-    	}
+    
    
 
 
@@ -493,4 +529,49 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         else
             throw new Exception("\nError at line " + this.scanner.getLine() + ": " + this.scanner.getLexeme(tokenName) + " expected");
     }
+    
+    
+//    // relational-operator    ->  < | <= | > | >= | == | !=
+//    
+//    private void relationalOperator() throws Exception{
+//    	String tokenName = this.token.getName();
+//    	if(tokenName.equals("<")) {
+//    		match("less_than");
+//    		
+//    		this.code.add("<");
+//    	}
+//    	else if(tokenName.equals("<=")) {
+//    		match("less_equals");
+//    		
+//    		this.code.add("<=");
+//    		
+//    	}else if(tokenName.equals(">")) {
+//    		match("greater_than");
+//    		
+//    		this.code.add(">");
+//    	}
+//    	else if(tokenName.equals(">=")) {
+//    		match("greater_equals");
+//    		
+//    		this.code.add(">=");
+//    	}
+//    	else if(tokenName.equals("==")) {
+//    		match("equals");
+//    		
+//    		this.code.add("==");
+//    	}
+//    	else if(tokenName.equals("!=")) {
+//    		match("not_equals");
+//    		
+//    		this.code.add("!=");
+//    	}
+//    	else {
+//    		throw new Exception("Expected relational Operator!");
+//    	}
+//    }
+    
+    
+    
+    
+    
 }
