@@ -215,23 +215,77 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
 
     }
     
-    private void instruction() throws Exception {
-
-       // instructions: assignments, conditionals, loops, etc.
-    	String tokenName = this.token.getName();
-    	
-    	// check te tokens in FIRST(instruction)
-    	
-    	if(tokenName.equals("int") || tokenName.equals("float") || tokenName.equals("boolean")){
+   private void instruction() throws Exception{
     		
-    		declaration();
-    		
-    	}else if(tokenName.equals("id")) {
-    		
-    		assignment();
-    		match("semicolon");
-    	}
-
+    	String token = this.token.getName();
+    	    if (token.equals("id") ) {
+	    	        // id assignment ;
+	    	        match("id");
+	    	        match("=");
+	    	        
+	    	        // Call expression to handle assignment value
+	    	        expression();
+	    	        match("semicolon");
+	    	        
+    	    } else if (token.equals("if")) {
+	    	        // if (logic-expression) instruction optional-else
+	    	        match("if");
+	    	        match("open_parenthesis");
+	    	        
+	    	        // Call logicExpression to handle the if condition
+	    	        logicExpression();
+	    	        match("closed_parenthesis");
+	    	        instruction();
+	    	        if (token.equals("else")) {
+	    	            match("else");
+	    	            instruction();
+	    	        }
+	    	        
+    	    } else if (token.equals("while")) {
+	    	        // while (logic-expression) instruction
+	    	        match("while");
+	    	        match("open_parenthesis");
+	    	        
+	    	        // Call logicExpression to handle the while condition
+	    	        logicExpression();
+	    	        match("closed_parenthesis");
+	    	        instruction();
+	    	        
+    	    } else if (token.equals("do")) {
+	    	        // do instruction while (logic-expression) ;
+	    	        match("do");
+	    	        instruction();
+	    	        match("while");
+	    	        match("open_parenthesis");
+	    	        
+	    	        // Call logicExpression to handle the do-while condition
+	    	        logicExpression();
+	    	        match("closed_parenthesis");
+	    	        match("semicolon");
+	    	        
+    	    } else if (token.equals("print")) {
+	    	        // print (expression) ;
+	    	        match("print");
+	    	        match("open_parenthesis");
+	    	        
+	    	        // Call expression to handle the print value
+	    	        expression();
+	    	        match("closed_parenthesis");
+	    	        match("semicolon");
+	    	        
+    	    } else if (token.equals("open_curly_bracket	")) {
+	    	        // { instructions }
+	    	        match("open_curly_bracket	");
+	    	        while (token.equals("closed_curly_bracket")) {
+	    	            instruction();
+	    	        }
+	    	        
+	    	        match("closed_curly_bracket");
+    	    } else {
+	    	        // declaration
+	    	        declaration();
+    	    }
+    
     }
 
     private void assignment() throws Exception {        
