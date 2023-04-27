@@ -30,7 +30,7 @@ import slu.compiler.*;
 //                           print (expression) ;                               |
 //                           { instructions }
 
-//assignment             ->  optional-array = logic-expression             REIMPLEMENT  
+//assignment             ->  optional-array = logic-expression             DONE  
 
 //optional-array         ->  [expression]     | ε                           
 
@@ -67,16 +67,18 @@ import slu.compiler.*;
 //                           float
 
 public class SyntaxAnalyzer implements ISyntaxAnalyzer {
-    private IToken token;
+	private IToken token;
     private ILexicalAnalyzer scanner;
     private Map<String, IDataType> symbols;
     private List<String> code;
+    private  int counter;		// this is helpful for the newLabel method
     
     public SyntaxAnalyzer(ILexicalAnalyzer lex) {
         this.scanner = lex;
         this.token = this.scanner.getToken();
         this.symbols = new HashMap<String, IDataType>();
         this.code = new ArrayList<String>();
+        this.counter = 0;
     }
 
     public String compile() throws Exception {
@@ -102,6 +104,8 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         instructions();	// this is the body 
         
         match("closed_curly_bracket");
+        
+        this.code.add("halt");
     }
     
     private void declarations() throws Exception {
@@ -166,25 +170,45 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         }
     }
     
-    private void optionalDeclaration(String type, Identifier id) throws Exception {
-       // optional declaration: a variable may be initialized when it is declared
-    	String tokenName = this.token.getName();
-    	
-    	if(tokenName.equals("assignment")) {
-    		
-    		this.code.add("push" + id.getLexeme());
-    		
-    		match("assignment");
-    			
-    		
-    		expression();
-    		
-    		this.code.add("store");
-    		
-    		
-    	}      
-    }    
     
+    private void optionalDeclaration(String type, Identifier id) throws Exception {
+        if (this.token.getName().equals("assignment")) {
+            
+            match("assignment");
+
+            // the token 'assignment' allows to assign  an initial value to a variable in the declaration
+
+            this.code.add("push " + id.getLexeme());
+                        
+            logicExpression();
+            
+            this.code.add("store");            
+        
+        } else if (this.token.getName().equals("open_square_bracket")) {
+            
+            // the token 'open_square_bracket' declares an array of int, float or boolean
+    
+            match("open_square_bracket");
+            
+            // array of a primitive data  type: int, float, boolean
+            
+            int size = 1;
+            
+            if (this.token.getName().equals("int")) {
+                IntegerNumber number = (IntegerNumber) this.token;
+                
+                size = number.getValue();
+                
+                this.code.add("array " + id.getLexeme() + " " + type + " " + size);
+            }
+            
+            match("int");
+            match("closed_square_bracket");
+            
+            this.symbols.put(id.getLexeme(), new ArrayType(type, size));
+            
+        }
+    }  
    
 
     private void instructions() throws Exception {
@@ -192,7 +216,7 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     	String tokenName = this.token.getName();
     	
     	// check the token in FIRST(instructions)
-    	if(tokenName.equals("int") || tokenName.equals("float") || tokenName.equals("boolean") || tokenName.equals("id")){
+    	if(tokenName.equals("int") || tokenName.equals("float") || tokenName.equals("boolean") || tokenName.equals("id") || tokenName.equals("if") ||  tokenName.equals("while") || tokenName.equals("do") || tokenName.equals("print") || tokenName.equals("open_curly_bracket")) {
     		
     		instruction();
     		instructions();
@@ -200,64 +224,94 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     	}
 
     }
-    
-  //instruction            ->  declaration                                        |   
-//  id assignment ;                                    |
-//  if (logic-expression) instruction optional-else    |
-//  while (logic-expression) instruction               |
-//  do instruction while (logic-expression) ;          |
-//  print (expression) ;                               |
-//  { instructions }
-    
-
-    	
+ 
     	private void instruction() throws Exception{
     		
     	String token = this.token.getName();
-    	    if (token.equals("id") ) {
+    	
+    	if(token.equals("int") || token.equals("float") || token.equals("boolean") ) {
+    		declaration();
+    	}
+    	
+    	else if (token.equals("id") ) {
 	    	        // id assignment ;
-	    	        match("id");
-	    	        match("=");
-	    	        
-	    	        // Call expression to handle assignment value
-	    	        expression();
+//	    	        match("id");
+	    	        assignment();
 	    	        match("semicolon");
+
 	    	        
     	    } else if (token.equals("if")) {
 	    	        // if (logic-expression) instruction optional-else
 	    	        match("if");
 	    	        match("open_parenthesis");
-	    	        
-	    	        // Call logicExpression to handle the if condition
 	    	        logicExpression();
+	    	        
+	    	       
+	    	        
+	    	        String Else= newLabel();
+	    	        this.code.add("gofalse" + Else);
+	    	        
 	    	        match("closed_parenthesis");
+	    	        
 	    	        instruction();
-	    	        if (token.equals("else")) {
-	    	            match("else");
-	    	            instruction();
-	    	        }
+	    	        
+	    	        String out = optionalElse(Else);
+	    	        
+	    	        this.code.add(out + ":");	
+	    	        
+	    	      
 	    	        
     	    } else if (token.equals("while")) {
 	    	        // while (logic-expression) instruction
+	    	       
+	    	        
+	    	        String test = newLabel();
+	    	       
+	    	        this.code.add(test + ":");
 	    	        match("while");
 	    	        match("open_parenthesis");
-	    	        
+	    	       
 	    	        // Call logicExpression to handle the while condition
 	    	        logicExpression();
+	    	        
+	    	        String out = newLabel();
+	    	        this.code.add("gofalse" + out);
+	    	        
 	    	        match("closed_parenthesis");
+	    	        
 	    	        instruction();
+	    	        
+	    	        this.code.add("goto" + test);
+	    	        this.code.add(out );
 	    	        
     	    } else if (token.equals("do")) {
 	    	        // do instruction while (logic-expression) ;
 	    	        match("do");
+	    	        
+	    	        String test = newLabel();
+	    	        this.code.add(test + ":");  
+	    	        
 	    	        instruction();
+	    	        
+	    	        
 	    	        match("while");
 	    	        match("open_parenthesis");
-	    	        
-	    	        // Call logicExpression to handle the do-while condition
 	    	        logicExpression();
+	    	        
+	    	        
 	    	        match("closed_parenthesis");
-	    	        match("semicolon");
+	    	        
+	    	        String out = newLabel();
+	    	        this.code.add("gofalse" + out);
+	    	        
+	    	        
+	    	        this.code.add("goto" + test);
+	    	        this.code.add(out + ":");
+	    	        
+	    	        
+	    	        
+	    	       
+//	    	        match("semicolon");
 	    	        
     	    } else if (token.equals("print")) {
 	    	        // print (expression) ;
@@ -267,71 +321,106 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
 	    	        // Call expression to handle the print value
 	    	        expression();
 	    	        match("closed_parenthesis");
-	    	        match("semicolon");
 	    	        
-    	    } else if (token.equals("open_curly_bracket	")) {
+	    	        match("semicolon");
+	    	        this.code.add("print");
+	    	        
+    	    } else if (token.equals("open_curly_bracket")) {
 	    	        // { instructions }
-	    	        match("open_curly_bracket	");
-	    	        while (token.equals("closed_curly_bracket")) {
-	    	            instruction();
-	    	        }
+	    	        match("open_curly_bracket");
+	    	        instructions();
+	    	        
 	    	        
 	    	        match("closed_curly_bracket");
-    	    } else {
-	    	        // declaration
-	    	        declaration();
-    	    }
+    	    } 
     
     }
     	
     	
-    	private void assignment() throws Exception {
-    	    optionalArray();
-    	    if (this.token.getName().equals("=")) {
-    	        match("=");
-    	        logicExpression();
-    	    } else {
-    	        throw new Exception("Syntax error: expecting '=' after optional array");
-    	    }
-    	}
-    
-    private void optionalElse() throws Exception{
+    	 private void assignment() throws Exception {     
+    		 
+
+     	        Identifier id = (Identifier) this.token;
+     	        
+     	        if (this.symbols.get(id.getLexeme()) == null) {      	        		
+       	            throw new Exception("\nError at line " + this.scanner.getLine() + ": identifier '" + id.getLexeme() + "' is not declared");
+     	        }
+
+     	        this.code.add("push " + id.getLexeme());
+     	        
+     	        match("id");
+     	        
+     	        optionalArray(id);
+     	        
+     	        match("assignment");
+     	        
+     	        logicExpression();
+     	        
+     	        this.code.add("store");
+    			 
+    		 }
+    		
+
+    		 	
+
+    private String optionalElse(String label) throws Exception{
     	String token = this.token.getName();
     	
     	if(token.equals("else")) {
+    		String out = newLabel();
+    		this.code.add("goto" + out);
+    		this.code.add(out + ":");
+    		
     		match("else");
     		instruction();
+    		
+    		this.code.add(out + ":");
     	}
+    	return label;
     	
     }
     
     private void logicExpression() throws Exception {
-    	String token = this.token.getName();
-    	// parse the first logic term 
     	logicTerm();
+    	moreLogicTerms();
     	
-    	// check for additional || logic terms 
-    	while(token.equals("or")) {
-    		match("or");
-    		logicTerm();
-    	}
     	
     }
     
     private void logicTerm() throws Exception {
-    	String token = this.token.getName();
-    	
-    	// parse the first logic factor
     	logicFactor();
+    	moreLogicFactors();
     	
-    	// check for additional AND logic factors
-    	while(token.equals("and")) {
-    		match("and");
-    		logicFactor();
-    	}
     	
     }
     
+    private void moreLogicFactors() throws Exception {
+    	if(this.token.getName().equals("and")) {
+    		match("and");
+    		
+    		logicFactor();
+    		
+    		this.code.add("&&");
+    		
+    		moreLogicFactors();
+    		
+    		
+    	}
+    }
+    
+    private void moreLogicTerms() throws Exception {
+    	if(this.token.getName().equals("or")) {
+    		match("or");
+    		
+    		logicTerm();
+    		
+    		this.code.add("||");
+    		
+    		moreLogicTerms();
+    		
+    	}
+    	
+    }
     
   //logic-factor           ->  ! logic-factor | true | false |			REIMPLEMENT  
 //  relational-expression
@@ -343,10 +432,14 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     		match("not");
     		logicFactor();
     		
+    		this.code.add("!");
+    		
     	}else if (token.equals("true")) {
+    		this.code.add("push 1");
     		match("true");
     	
     	}else if (token.equals("false")) {
+    		this.code.add("push 0");
     		match("false");
     	
     	}else {
@@ -361,36 +454,20 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
     
     private void relationalExpression() throws Exception{
     	 expression();
-    	    if (isRelationalOperator()) {
-    	        relationalOperator();
-    	        expression();
+    	 
+    	 String tokenName = this.token.getName();
+    	
+    	 if (tokenName.equals("less_than") || tokenName.equals("less_equals") || tokenName.equals("greater_than") 
+    	    		|| tokenName.equals("greater_equals") || tokenName.equals("equals") || tokenName.equals("not_equals")) {
+    		 
+    		String operator = this.scanner.getLexeme(tokenName);
+    		match(tokenName);		
+    	    expression();
+    	     
+    	    this.code.add(operator);
     	    }
     }
  
-    // extra function to help with relationalExpression
-    private boolean isRelationalOperator() {
-        String token = this.token.getName();
-        return (token.equals("<") || token.equals("<=") ||
-                token.equals(">") || token.equals(">=") ||
-                token.equals("==") || token.equals("!="));
-    }
-    
-    
-//    relational-operator    ->  < | <= | > | >= | == | !=
-    private  void relationalOperator() throws Exception {
-        String token = this.token.getName();
-        if (token.equals("<") || token.equals("<=") ||
-            token.equals(">") || token.equals(">=") ||
-            token.equals("==") || token.equals("!=")) {
-            // match the relational operator token and move to the next token
-            match(token);
-        } else {
-            // throw an exception if the current token is not a relational operator
-            throw new Exception("Expected a relational operator! ");
-        }
-    }
-    
-   
 
 
     private void expression() throws Exception {
@@ -442,13 +519,25 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
             
             match("int");
             
-        } else if (this.token.getName().equals("id")) {
+        }else if(this.token.getName().equals("float")){
+        	
+        	 RealNumber number = (RealNumber) this.token;
+             
+             this.code.add("push " + number.getValue());            
+             
+             match("float");
+        	
+        }
+        
+        else if (this.token.getName().equals("id")) {
 
             Identifier id = (Identifier) this.token;
             
             this.code.add("push " + id.getLexeme());
             
-            optionalArray();
+            match("id");
+            
+            optionalArray(id);
 
             this.code.add("load");
             
@@ -493,33 +582,20 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         }        
     }
     
-    private void optionalArray() throws Exception {
-        if (this.token.getName().equals("id")) {        
-            
-            Identifier id = (Identifier) this.token;
-            
-            if (this.symbols.get(id.getLexeme()) == null) {                
-                throw new Exception("\nError at line " + this.scanner.getLine() + ": identifier '" + id.getLexeme() + "' is not declared");
-            }
-            
-            match("id");
-            
-            if (this.token.getName().equals("open_square_bracket")) {
+    private void optionalArray(Identifier id) throws Exception {
+        if (this.token.getName().equals("open_square_bracket")) {
                 
-                match("open_square_bracket");
+            match("open_square_bracket");
                 
-                expression();
+            expression();
                 
-                match("closed_square_bracket");
+            match("closed_square_bracket");
                 
-                this.code.add("+");
-                
-            } 
+            // the operator + is used to calculate the address of the index of the array defined by expression
+            // the value of expression is the offset added to the base address of the array
             
-        } else {            
-            
-            throw new Exception("\nError at line " + this.scanner.getLine() + ": a variable is expected");
-            
+            this.code.add("+");
+                
         }        
     }
 
@@ -527,49 +603,15 @@ public class SyntaxAnalyzer implements ISyntaxAnalyzer {
         if (this.token.getName().equals(tokenName)) 
             this.token = this.scanner.getToken();
         else
-            throw new Exception("\nError at line " + this.scanner.getLine() + ": " + this.scanner.getLexeme(tokenName) + " expected");
+            throw new Exception("\nError at line" + this.scanner.getLine() + ": " + this.scanner.getLexeme(tokenName) + " expected" + this.token.getName());
     }
     
+	
     
-//    // relational-operator    ->  < | <= | > | >= | == | !=
-//    
-//    private void relationalOperator() throws Exception{
-//    	String tokenName = this.token.getName();
-//    	if(tokenName.equals("<")) {
-//    		match("less_than");
-//    		
-//    		this.code.add("<");
-//    	}
-//    	else if(tokenName.equals("<=")) {
-//    		match("less_equals");
-//    		
-//    		this.code.add("<=");
-//    		
-//    	}else if(tokenName.equals(">")) {
-//    		match("greater_than");
-//    		
-//    		this.code.add(">");
-//    	}
-//    	else if(tokenName.equals(">=")) {
-//    		match("greater_equals");
-//    		
-//    		this.code.add(">=");
-//    	}
-//    	else if(tokenName.equals("==")) {
-//    		match("equals");
-//    		
-//    		this.code.add("==");
-//    	}
-//    	else if(tokenName.equals("!=")) {
-//    		match("not_equals");
-//    		
-//    		this.code.add("!=");
-//    	}
-//    	else {
-//    		throw new Exception("Expected relational Operator!");
-//    	}
-//    }
-    
+    private String newLabel() { 
+    	return "label" + Integer.toString(this.counter++);
+    	
+    }
     
     
     
